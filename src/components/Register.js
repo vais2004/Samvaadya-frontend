@@ -8,10 +8,13 @@ const Register = ({ setUser }) => {
 
   const handleRegister = async () => {
     try {
-      const { data } = await axios.post("http://localhost:5001/auth/register", {
-        username,
-        password,
-      });
+      const { data } = await axios.post(
+        "https://samvaadya.vercel.app/auth/register",
+        {
+          username,
+          password,
+        }
+      );
 
       setRegistrationSuccess(
         "You are registered successfully. Proceed to login."
@@ -48,8 +51,7 @@ const Register = ({ setUser }) => {
         />
         <button
           className="btn btn-success btn-lg mt-3"
-          onClick={handleRegister}
-        >
+          onClick={handleRegister}>
           Register
         </button>
         {registerationSuccess && <p>{registerationSuccess}</p>}
