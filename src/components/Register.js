@@ -9,7 +9,7 @@ const Register = ({ setUser }) => {
   const handleRegister = async () => {
     try {
       const { data } = await axios.post(
-        "https://samvaadya.vercel.app/auth/register",
+        "samvaadya-production.up.railway.app/auth/register",
         {
           username,
           password,
