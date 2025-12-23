@@ -87,6 +87,7 @@ export const Chat = ({ user }) => {
       {currentChat && (
         <div className="chat-window">
           <h5>You are chatting with {currentChat}</h5>
+         <hr/>
           <MessageList messages={messages} user={user} />
           <div className="message-field">
             <input
@@ -96,7 +97,7 @@ export const Chat = ({ user }) => {
               style={{ minWidth: "400px" }}
               onChange={(e) => setCurrentMessage(e.target.value)}
             />
-            <button className="btn-prime" onClick={sendMessage}>
+            <button style={{  backgroundColor: "#f2dafaff" }} onClick={sendMessage}>
               Send
             </button>
           </div>
