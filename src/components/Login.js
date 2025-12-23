@@ -8,7 +8,7 @@ const Login = ({ setUser }) => {
   const handleLogin = async () => {
     try {
       const { data } = await axios.post(
-        "samvaadya-production.up.railway.app/auth/login",
+        "https://samvaadya-production.up.railway.app/auth/login",
         {
           username,
           password,

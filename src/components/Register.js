@@ -9,7 +9,7 @@ const Register = ({ setUser }) => {
   const handleRegister = async () => {
     try {
       const { data } = await axios.post(
-        "samvaadya-production.up.railway.app/auth/register",
+        "https://samvaadya-production.up.railway.app/auth/register",
         {
           username,
           password,
