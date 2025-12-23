@@ -6,6 +6,7 @@
 }
 
 .chat-user {
+  text-align: start;
   padding: 10px;
   cursor: pointer;
   border-bottom: 1px solid #eee;

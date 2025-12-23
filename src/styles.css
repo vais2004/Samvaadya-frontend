@@ -43,7 +43,7 @@ body {
 }
 
 .message.sent {
-    background-color: #daf8cb;
+    background-color: #f6e9fa;
     text-align: right;
 }
 
@@ -64,7 +64,7 @@ input, button {
 }
 
 .btn-prime {
-    background-color: #daf8cb;
+    background-color: #f6e9fa;
     border-radius: 5px;
 }
 

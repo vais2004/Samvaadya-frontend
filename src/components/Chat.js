@@ -12,8 +12,14 @@ export const Chat = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
 
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState("");
+
   useEffect(() => {
-    // Fetch all users excluding the current user
+    socket.emit("join", user.username);
+  }, []);
+
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
         const { data } = await axios.get(
@@ -30,7 +36,18 @@ export const Chat = ({ user }) => {
 
     fetchUsers();
 
-    // Listen for incoming messages
+    // ✅ FIXED typing listener
+    socket.on("typing", (data) => {
+      if (data.sender === currentChat && data.receiver === user.username) {
+        setTypingUser(data.sender);
+        setIsTyping(true);
+
+        setTimeout(() => {
+          setIsTyping(false);
+        }, 3000);
+      }
+    });
+
     socket.on("receive_message", (data) => {
       if (data.sender === currentChat || data.receiver === currentChat) {
         setMessages((prev) => [...prev, data]);
@@ -39,6 +56,7 @@ export const Chat = ({ user }) => {
 
     return () => {
       socket.off("receive_message");
+      socket.off("typing");
     };
   }, [currentChat]);
 
@@ -63,6 +81,7 @@ export const Chat = ({ user }) => {
       receiver: currentChat,
       message: currentMessage,
     };
+
     socket.emit("send_message", messageData);
     setMessages((prev) => [...prev, messageData]);
     setCurrentMessage("");
@@ -71,6 +90,7 @@ export const Chat = ({ user }) => {
   return (
     <div className="chat-container">
       <h2>Welcome, {user.username}</h2>
+
       <div className="chat-list">
         <h3>Chats</h3>
         {users.map((u) => (
@@ -84,20 +104,42 @@ export const Chat = ({ user }) => {
           </div>
         ))}
       </div>
+
       {currentChat && (
         <div className="chat-window">
-          <h5>You are chatting with {currentChat}</h5>
-         <hr/>
+          <div>
+            <h5>You are chatting with {currentChat}</h5>
+
+            {isTyping ? (
+              <p style={{ fontSize: "13px", color: "green" }}>
+                <b>{typingUser} is typing...</b>
+              </p>
+            ) : (
+              <div style={{ paddingBottom: "1.2rem" }}></div>
+            )}
+          </div>
+          <hr />
+
           <MessageList messages={messages} user={user} />
+
           <div className="message-field">
             <input
               type="text"
               placeholder="Type a message..."
               value={currentMessage}
               style={{ minWidth: "400px" }}
-              onChange={(e) => setCurrentMessage(e.target.value)}
+              onChange={(e) => {
+                setCurrentMessage(e.target.value);
+                socket.emit("typing", {
+                  sender: user.username,
+                  receiver: currentChat,
+                });
+              }}
             />
-            <button style={{  backgroundColor: "#f2dafaff" }} onClick={sendMessage}>
+
+            <button
+              style={{ backgroundColor: "#f2dafaff" }}
+              onClick={sendMessage}>
               Send
             </button>
           </div>

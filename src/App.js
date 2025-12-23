@@ -10,7 +10,15 @@ const App = () => {
 
   return (
     <div className="app">
-      <h1>Chat App</h1>
+      <h1 className="app-logo">
+        <img
+          src="https://cdn3.iconfinder.com/data/icons/smartphone-63/64/Conversation-Chat-Smartphone-256.png"
+          alt="Samvaadya Logo"
+          className="logo-img"
+          style={{height:"40px", width:"45px"}}
+        />
+        Samvaadya
+      </h1>
       {!user ? (
         <div className="container mt-5 text-center">
           <div className="row">
