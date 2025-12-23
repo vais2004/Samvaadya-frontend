@@ -50,6 +50,7 @@ const Register = ({ setUser }) => {
           onChange={(e) => setPassword(e.target.value)}
         />
         <button
+          type="button"
           className="btn btn-success btn-lg mt-3"
           onClick={handleRegister}>
           Register
