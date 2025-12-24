@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import MessageList from "./MessageList";
 import "./chat.css";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
 const socket = io("https://samvaadya-production.up.railway.app");
 
@@ -14,6 +16,8 @@ export const Chat = ({ user }) => {
 
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
+
+  const [showEmoji, setShowEmoji] = useState(false);
 
   useEffect(() => {
     socket.emit("join", user.username);
@@ -27,11 +31,7 @@ export const Chat = ({ user }) => {
       );
       setUsers(data);
     };
-
     fetchUsers();
-
-    socket.off("typing");
-    socket.off("receive_message");
 
     socket.on("typing", (data) => {
       if (data.sender === currentChat && data.receiver === user.username) {
@@ -42,11 +42,20 @@ export const Chat = ({ user }) => {
     });
 
     socket.on("receive_message", (data) => {
-      if (data.sender === currentChat || data.receiver === currentChat) {
+      if (
+        data.sender !== user.username &&
+        (data.sender === currentChat || data.receiver === currentChat)
+      ) {
         setMessages((prev) => [...prev, data]);
       }
     });
-  }, [currentChat]);
+
+    // Cleanup to prevent duplicate listeners when component unmounts
+    return () => {
+      socket.off("typing");
+      socket.off("receive_message");
+    };
+  }, []); // ❌ EMPTY DEPENDENCY — only run once
 
   const fetchMessages = async (receiver) => {
     const { data } = await axios.get(
@@ -69,6 +78,7 @@ export const Chat = ({ user }) => {
     };
 
     socket.emit("send_message", messageData);
+    setMessages((prev) => [...prev, messageData]);
     setCurrentMessage(""); // ✅ ONLY clear input
   };
 
@@ -105,7 +115,25 @@ export const Chat = ({ user }) => {
           <MessageList messages={messages} user={user} />
 
           <div className="message-field">
-          <button onClick={() => setCurrentMessage(currentMessage + "😊")}>😊</button>
+            <div className="emoji-wrapper">
+              <button
+                onClick={() => setShowEmoji(!showEmoji)}
+                className="emoji-btn">
+                <i className="bi bi-emoji-smile"></i>
+              </button>
+
+              {showEmoji && (
+                <div className="emoji-picker-container">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={(e) => {
+                      setCurrentMessage((prev) => prev + e.native);
+                      setShowEmoji(false);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
             <input
               type="text"

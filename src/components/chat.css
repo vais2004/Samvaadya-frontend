@@ -33,3 +33,27 @@
 .message-field {
   min-width: 500px
 }
+
+.message-field {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.emoji-wrapper {
+  position: relative;
+}
+
+.emoji-btn {
+  font-size: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.emoji-picker-container {
+  position: absolute;
+  bottom: 45px;   /* 👈 opens UP */
+  left: 0;
+  z-index: 1000;
+}
