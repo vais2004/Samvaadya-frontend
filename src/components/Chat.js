@@ -21,30 +21,23 @@ export const Chat = ({ user }) => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      try {
-        const { data } = await axios.get(
-          "https://samvaadya-production.up.railway.app/users",
-          {
-            params: { currentUser: user.username },
-          }
-        );
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users", error);
-      }
+      const { data } = await axios.get(
+        "https://samvaadya-production.up.railway.app/users",
+        { params: { currentUser: user.username } }
+      );
+      setUsers(data);
     };
 
     fetchUsers();
 
-    // ✅ FIXED typing listener
+    socket.off("typing");
+    socket.off("receive_message");
+
     socket.on("typing", (data) => {
       if (data.sender === currentChat && data.receiver === user.username) {
         setTypingUser(data.sender);
         setIsTyping(true);
-
-        setTimeout(() => {
-          setIsTyping(false);
-        }, 3000);
+        setTimeout(() => setIsTyping(false), 3000);
       }
     });
 
@@ -53,38 +46,30 @@ export const Chat = ({ user }) => {
         setMessages((prev) => [...prev, data]);
       }
     });
-
-    return () => {
-      socket.off("receive_message");
-      socket.off("typing");
-    };
   }, [currentChat]);
 
   const fetchMessages = async (receiver) => {
-    try {
-      const { data } = await axios.get(
-        "https://samvaadya-production.up.railway.app/messages",
-        {
-          params: { sender: user.username, receiver },
-        }
-      );
-      setMessages(data);
-      setCurrentChat(receiver);
-    } catch (error) {
-      console.error("Error fetching messages", error);
-    }
+    const { data } = await axios.get(
+      "https://samvaadya-production.up.railway.app/messages",
+      { params: { sender: user.username, receiver } }
+    );
+    setMessages(data);
+    setCurrentChat(receiver);
   };
 
   const sendMessage = () => {
+    if (!currentMessage.trim()) return;
+
     const messageData = {
       sender: user.username,
       receiver: currentChat,
       message: currentMessage,
+      time: new Date().toLocaleTimeString(),
+      status: "sent",
     };
 
     socket.emit("send_message", messageData);
-    setMessages((prev) => [...prev, messageData]);
-    setCurrentMessage("");
+    setCurrentMessage(""); // ✅ ONLY clear input
   };
 
   return (
@@ -107,27 +92,25 @@ export const Chat = ({ user }) => {
 
       {currentChat && (
         <div className="chat-window">
-          <div>
-            <h5>You are chatting with {currentChat}</h5>
+          <h5>You are chatting with {currentChat}</h5>
 
-            {isTyping ? (
-              <p style={{ fontSize: "13px", color: "green" }}>
-                <b>{typingUser} is typing...</b>
-              </p>
-            ) : (
-              <div style={{ paddingBottom: "1.2rem" }}></div>
-            )}
-          </div>
+          {isTyping && (
+            <p style={{ fontSize: "13px", color: "green" }}>
+              <b>{typingUser} is typing...</b>
+            </p>
+          )}
+
           <hr />
 
           <MessageList messages={messages} user={user} />
 
           <div className="message-field">
+          <button onClick={() => setCurrentMessage(currentMessage + "😊")}>😊</button>
+
             <input
               type="text"
-              placeholder="Type a message..."
               value={currentMessage}
-              style={{ minWidth: "400px" }}
+              placeholder="Type a message..."
               onChange={(e) => {
                 setCurrentMessage(e.target.value);
                 socket.emit("typing", {
@@ -136,12 +119,7 @@ export const Chat = ({ user }) => {
                 });
               }}
             />
-
-            <button
-              style={{ backgroundColor: "#f2dafaff" }}
-              onClick={sendMessage}>
-              Send
-            </button>
+            <button onClick={sendMessage}>Send</button>
           </div>
         </div>
       )}
