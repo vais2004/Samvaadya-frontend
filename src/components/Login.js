@@ -8,7 +8,7 @@ const Login = ({ setUser }) => {
   const handleLogin = async () => {
     try {
       const { data } = await axios.post(
-        "https://samvaadya-production.up.railway.app/auth/login",
+        "https://bitter-hettie-neog-1ffc9095.koyeb.app/auth/login",
         {
           username,
           password,

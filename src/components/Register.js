@@ -9,7 +9,7 @@ const Register = ({ setUser }) => {
   const handleRegister = async () => {
     try {
       const { data } = await axios.post(
-        "https://samvaadya-production.up.railway.app/auth/register",
+        "https://bitter-hettie-neog-1ffc9095.koyeb.app/auth/register",
         {
           username,
           password,

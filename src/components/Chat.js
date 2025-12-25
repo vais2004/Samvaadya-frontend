@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
 import MessageList from "./MessageList";
@@ -6,64 +6,89 @@ import "./chat.css";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 
-const socket = io("https://samvaadya-production.up.railway.app");
+const socket = io("https://bitter-hettie-neog-1ffc9095.koyeb.app/", {
+  transports: ["websocket"],
+});
 
 export const Chat = ({ user }) => {
   const [users, setUsers] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
-
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
-
   const [showEmoji, setShowEmoji] = useState(false);
+
+  const currentChatRef = useRef(null);
+
+  useEffect(() => {
+    currentChatRef.current = currentChat;
+  }, [currentChat]);
 
   useEffect(() => {
     socket.emit("join", user.username);
   }, []);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data } = await axios.get(
-        "https://samvaadya-production.up.railway.app/users",
-        { params: { currentUser: user.username } }
-      );
-      setUsers(data);
-    };
-    fetchUsers();
+    axios
+      .get("https://bitter-hettie-neog-1ffc9095.koyeb.app/users", {
+        params: { currentUser: user.username },
+      })
+      .then((res) => setUsers(res.data));
 
     socket.on("typing", (data) => {
-      if (data.sender === currentChat && data.receiver === user.username) {
+      if (
+        data.sender === currentChatRef.current &&
+        data.receiver === user.username
+      ) {
         setTypingUser(data.sender);
         setIsTyping(true);
-        setTimeout(() => setIsTyping(false), 3000);
+        setTimeout(() => setIsTyping(false), 2000);
       }
     });
 
     socket.on("receive_message", (data) => {
-      if (
-        data.sender !== user.username &&
-        (data.sender === currentChat || data.receiver === currentChat)
-      ) {
+      if (data.sender === currentChatRef.current) {
         setMessages((prev) => [...prev, data]);
       }
     });
 
-    // Cleanup to prevent duplicate listeners when component unmounts
+    socket.on("message_delivered", ({ _id }) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg._id === _id ? { ...msg, delivered: true } : msg))
+      );
+    });
+
+    socket.on("message_read", ({ sender }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.sender === user.username && msg.receiver === sender
+            ? { ...msg, read: true }
+            : msg
+        )
+      );
+    });
+
     return () => {
       socket.off("typing");
       socket.off("receive_message");
+      socket.off("message_delivered");
+      socket.off("message_read");
     };
-  }, []); // ❌ EMPTY DEPENDENCY — only run once
+  }, []);
 
   const fetchMessages = async (receiver) => {
-    const { data } = await axios.get(
-      "https://samvaadya-production.up.railway.app/messages",
+    const res = await axios.get(
+      "https://bitter-hettie-neog-1ffc9095.koyeb.app/messages",
       { params: { sender: user.username, receiver } }
     );
-    setMessages(data);
+    setMessages(res.data);
     setCurrentChat(receiver);
+
+    socket.emit("message_read", {
+      sender: receiver,
+      receiver: user.username,
+    });
   };
 
   const sendMessage = () => {
@@ -74,12 +99,13 @@ export const Chat = ({ user }) => {
       receiver: currentChat,
       message: currentMessage,
       time: new Date().toLocaleTimeString(),
-      status: "sent",
+      delivered: false, // initially false
+      read: false, // initially false
     };
 
     socket.emit("send_message", messageData);
     setMessages((prev) => [...prev, messageData]);
-    setCurrentMessage(""); // ✅ ONLY clear input
+    setCurrentMessage("");
   };
 
   return (
@@ -134,7 +160,6 @@ export const Chat = ({ user }) => {
                 </div>
               )}
             </div>
-
             <input
               type="text"
               value={currentMessage}
@@ -147,6 +172,7 @@ export const Chat = ({ user }) => {
                 });
               }}
             />
+
             <button onClick={sendMessage}>Send</button>
           </div>
         </div>

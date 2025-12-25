@@ -16,7 +16,7 @@ const App = () => {
           src="https://cdn3.iconfinder.com/data/icons/smartphone-63/64/Conversation-Chat-Smartphone-256.png"
           alt="Samvaadya Logo"
           className="logo-img"
-          style={{height:"40px", width:"45px"}}
+          style={{height:"30px", width:"35px"}}
         />
         Samvaadya
       </h1>
