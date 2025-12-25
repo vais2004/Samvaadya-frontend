@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
+import Picker from "emoji-picker-react";
 import MessageList from "./MessageList";
 import "./chat.css";
-import Picker from "@emoji-mart/react";
-import data from "@emoji-mart/data";
 
-const socket = io("https://bitter-hettie-neog-1ffc9095.koyeb.app/", {
-  transports: ["websocket"],
-});
+const socket = io("https://bitter-hettie-neog-1ffc9095.koyeb.app");
 
 export const Chat = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -17,166 +14,139 @@ export const Chat = ({ user }) => {
   const [currentMessage, setCurrentMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
-  const [showEmoji, setShowEmoji] = useState(false);
-
-  const currentChatRef = useRef(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
-    currentChatRef.current = currentChat;
-  }, [currentChat]);
+    socket.emit("register", user.username);
+  }, [user.username]);
 
   useEffect(() => {
-    socket.emit("join", user.username);
-  }, []);
-
-  useEffect(() => {
-    axios
-      .get("https://bitter-hettie-neog-1ffc9095.koyeb.app/users", {
-        params: { currentUser: user.username },
-      })
-      .then((res) => setUsers(res.data));
-
-    socket.on("typing", (data) => {
-      if (
-        data.sender === currentChatRef.current &&
-        data.receiver === user.username
-      ) {
-        setTypingUser(data.sender);
-        setIsTyping(true);
-        setTimeout(() => setIsTyping(false), 2000);
+    const fetchUsers = async () => {
+      try {
+        const { data } = await axios.get(
+          "https://bitter-hettie-neog-1ffc9095.koyeb.app/users",
+          { params: { currentUser: user.username } }
+        );
+        setUsers(data);
+      } catch (err) {
+        console.log(err);
       }
-    });
-
-    socket.on("receive_message", (data) => {
-      if (data.sender === currentChatRef.current) {
-        setMessages((prev) => [...prev, data]);
-      }
-    });
-
-    socket.on("message_delivered", ({ _id }) => {
-      setMessages((prev) =>
-        prev.map((msg) => (msg._id === _id ? { ...msg, delivered: true } : msg))
-      );
-    });
-
-    socket.on("message_read", ({ sender }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.sender === user.username && msg.receiver === sender
-            ? { ...msg, read: true }
-            : msg
-        )
-      );
-    });
-
-    return () => {
-      socket.off("typing");
-      socket.off("receive_message");
-      socket.off("message_delivered");
-      socket.off("message_read");
     };
-  }, []);
+    fetchUsers();
+  }, [user.username]);
 
   const fetchMessages = async (receiver) => {
-    const res = await axios.get(
-      "https://bitter-hettie-neog-1ffc9095.koyeb.app/messages",
-      { params: { sender: user.username, receiver } }
-    );
-    setMessages(res.data);
-    setCurrentChat(receiver);
-
-    socket.emit("message_read", {
-      sender: receiver,
-      receiver: user.username,
-    });
+    try {
+      const { data } = await axios.get(
+        "https://bitter-hettie-neog-1ffc9095.koyeb.app/messages",
+        { params: { sender: user.username, receiver } }
+      );
+      setMessages(data);
+      setCurrentChat(receiver);
+      setShowEmojiPicker(false);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const sendMessage = () => {
     if (!currentMessage.trim()) return;
 
-    const messageData = {
+    socket.emit("send_message", {
       sender: user.username,
       receiver: currentChat,
       message: currentMessage,
-      time: new Date().toLocaleTimeString(),
-      delivered: false, // initially false
-      read: false, // initially false
-    };
+    });
 
-    socket.emit("send_message", messageData);
-    setMessages((prev) => [...prev, messageData]);
+    setMessages((prev) => [
+      ...prev,
+      { sender: user.username, receiver: currentChat, message: currentMessage },
+    ]);
+
     setCurrentMessage("");
+    setShowEmojiPicker(false);
+  };
+
+  const handleEmojiClick = (emojiObject) => {
+    setCurrentMessage((prev) => prev + emojiObject.emoji);
   };
 
   return (
-    <div className="chat-container">
-      <h2>Welcome, {user.username}</h2>
+    <div className="container-fluid">
+      <h4 className="text-center my-2">Welcome, {user.username}</h4>
 
-      <div className="chat-list">
-        <h3>Chats</h3>
-        {users.map((u) => (
-          <div
-            key={u._id}
-            className={`chat-user ${
-              currentChat === u.username ? "active" : ""
-            }`}
-            onClick={() => fetchMessages(u.username)}>
-            {u.username}
-          </div>
-        ))}
-      </div>
+      <div className="row">
+        {/* CHAT LIST */}
+        <div className="col-12 col-md-4 col-lg-3 border-end">
+          <h6>Chats</h6>
+          {users.map((u) => (
+            <div
+              key={u._id}
+              className={`chat-user ${
+                currentChat === u.username ? "active" : ""
+              }`}
+              onClick={() => fetchMessages(u.username)}>
+              {u.username}
+            </div>
+          ))}
+        </div>
 
-      {currentChat && (
-        <div className="chat-window">
-          <h5>You are chatting with {currentChat}</h5>
+        {/* CHAT WINDOW */}
+        {currentChat && (
+          <div className="col-12 col-md-8 col-lg-9 d-flex flex-column">
+            <h6>You are chatting with {currentChat}</h6>
 
-          {isTyping && (
-            <p style={{ fontSize: "13px", color: "green" }}>
-              <b>{typingUser} is typing...</b>
-            </p>
-          )}
+            <MessageList messages={messages} user={user} />
 
-          <hr />
+            {isTyping && (
+              <p className="typing-indicator">{typingUser} is typing...</p>
+            )}
 
-          <MessageList messages={messages} user={user} />
-
-          <div className="message-field">
-            <div className="emoji-wrapper">
+            {/* MESSAGE INPUT LINE (WHATSAPP STYLE) */}
+            <div className="d-flex align-items-center flex-nowrap gap-2 mt-2 position-relative">
+              {/* Emoji Button */}
               <button
-                onClick={() => setShowEmoji(!showEmoji)}
-                className="emoji-btn">
-                <i className="bi bi-emoji-smile"></i>
+                className="btn btn-light"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                😊
               </button>
 
-              {showEmoji && (
-                <div className="emoji-picker-container">
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div
+                  className="position-absolute bg-white shadow rounded"
+                  style={{
+                    bottom: "55px",
+                    left: "0",
+                    width: "280px",
+                    maxWidth: "90vw",
+                    zIndex: 1000,
+                  }}>
                   <Picker
-                    data={data}
-                    onEmojiSelect={(e) => {
-                      setCurrentMessage((prev) => prev + e.native);
-                      setShowEmoji(false);
-                    }}
+                    onEmojiClick={handleEmojiClick}
+                    width={280}
+                    height={300}
                   />
                 </div>
               )}
-            </div>
-            <input
-              type="text"
-              value={currentMessage}
-              placeholder="Type a message..."
-              onChange={(e) => {
-                setCurrentMessage(e.target.value);
-                socket.emit("typing", {
-                  sender: user.username,
-                  receiver: currentChat,
-                });
-              }}
-            />
 
-            <button onClick={sendMessage}>Send</button>
+              {/* Input */}
+              <input
+                type="text"
+                className="form-control flex-grow-1"
+                placeholder="Type a message"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+              />
+
+              {/* Send Button */}
+              <button className="btn btn-primary" onClick={sendMessage}>
+                Send
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

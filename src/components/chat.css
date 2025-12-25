@@ -6,7 +6,6 @@
 }
 
 .chat-user {
-  text-align: start;
   padding: 10px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
@@ -17,7 +16,7 @@
 }
 
 .chat-user.active {
-  background-color: #f4e8f8;
+  background-color: #ddecfa;
 }
 
 .chat-window {
@@ -26,34 +25,70 @@
 }
 
 .btn-primary {
-  background-color: #f4e8f8;
-  ;
+  background-color: #ddecfa;
 }
 
 .message-field {
   min-width: 500px
 }
 
+.typing-indicator {
+  font-style: italic;
+  color: #666;
+  margin: 5px 0;
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.message-bubble {
+  position: relative;
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 60%;
+  word-wrap: break-word;
+}
+
+.sent {
+  background-color: #ddecfa;
+  align-self: flex-end;
+}
+
+.received {
+  background-color: #f1f0f0;
+  align-self: flex-start;
+}
+
+.timestamp {
+  display: block;
+  font-size: 0.75rem;
+  color: gray;
+  text-align: right;
+  margin-top: 2px;
+}
+
 .message-field {
+  position: relative;
+  /* 🔥 required */
+  min-width: 500px;
   display: flex;
   align-items: center;
-  position: relative;
+  gap: 8px;
 }
 
 .emoji-wrapper {
   position: relative;
 }
 
-.emoji-btn {
-  font-size: 22px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.emoji-picker-container {
+.emoji-picker-up {
   position: absolute;
-  bottom: 45px;   /* 👈 opens UP */
+  bottom: 55px;
+  /* opens above input */
   left: 0;
-  z-index: 1000;
+  z-index: 9999;
 }

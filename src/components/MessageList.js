@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
+
 const MessageList = ({ messages, user }) => {
   const bottomRef = useRef(null);
 
@@ -9,35 +10,25 @@ const MessageList = ({ messages, user }) => {
 
   return (
     <div className="message-list">
-      {messages.map((msg, index) => (
-        <div
-          key={index}
-          className={`message ${
-            msg.sender === user.username ? "sent" : "received"
-          }`}>
-          <strong>{msg.sender}: </strong>
-          {msg.message}
+      {messages.map((msg, index) => {
+        const isSender = msg.sender === user.username;
 
-          <small style={{ fontSize: "10px", display: "block" }}>
-            {msg.time ||
-              (msg.createdAt && new Date(msg.createdAt).toLocaleTimeString())}
-          </small>
-
-          <span
-            style={{
-              fontSize: "12px",
-              marginLeft: "5px",
-              color: msg.read ? "#0d6efd" : "#777",
-            }}>
-            {!msg.delivered && "✓"}
-            {msg.delivered && !msg.read && "✓✓"}
-            {msg.read && "🔵✓✓"}
-          </span>
-        </div>
-      ))}
-      <div ref={bottomRef} />
+        return (
+          <div
+            key={index}
+            className={`message ${isSender ? "sent" : "received"}`}>
+            <div className="message-content">
+              <strong>{msg.sender}: </strong>
+              {msg.message}
+            </div>
+          </div>
+        );
+      })}
+      {/* Auto scroll target */}
+      <div ref={bottomRef}></div>
     </div>
   );
 };
+
 
 export default MessageList;
